@@ -5,7 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import User, Organization
-from .models import Tender
+from .models import Tender, TenderStatus
 from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer
 
 
@@ -22,11 +22,11 @@ class TenderView(APIView):
             )
 
         if serializer.validated_data['service_type']:
-            items = TenderSerializer(Tender.objects.filter(serviceType=serializer.validated_data['service_type'])[
+            items = TenderSerializer(Tender.objects.filter(serviceType=serializer.validated_data['service_type']).filter(status="Published")[
                     serializer.validated_data['offset']:serializer.validated_data['offset'] + serializer.validated_data[
                         'limit']], many=True).data
         else:
-            items = TenderSerializer(Tender.objects.all()[
+            items = TenderSerializer(Tender.objects.filter(status="Published")[
                                      serializer.validated_data['offset']:serializer.validated_data['offset'] +
                                                                          serializer.validated_data[
                                                                              'limit']], many=True).data
@@ -108,3 +108,21 @@ class GetMyTenders(APIView):
                 many=True
             ).data
         )
+
+
+class TenderStatusView(APIView):
+    def get(self, request: Request, tender_id: str):
+        try:
+            tender = Tender.objects.get(tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
+        if request.query_params.get("username"):
+            user = User.objects.filter(username=request.query_params.get("username")).first()
+        else:
+            user = None
+
