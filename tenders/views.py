@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from core.models import User, Organization
 from .models import Tender
-from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer
+from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer
 
 
 class TenderView(APIView):
@@ -60,7 +60,7 @@ class CreateTenderView(APIView):
             return Response(
                 status=400,
                 data={
-                    "reason": "Organization does not exsists"
+                    "reason": "Organization does not exists"
                 }
             )
 
@@ -75,4 +75,36 @@ class CreateTenderView(APIView):
         return Response(
             status=200,
             data=TenderSerializer(tender).data
+        )
+
+
+class GetMyTenders(APIView):
+    def get(self, request: Request):
+        serializer = MyTenderFilterSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(
+                status=400,
+                data={
+                    "reason": "Bad request"
+                }
+            )
+
+        user = User.objects.filter(username=serializer.validated_data['username']).first()
+        if not user:
+            return Response(
+                status=401,
+                data={
+                    "reason": "User does not exists"
+                }
+            )
+
+        return Response(
+            status=200,
+            data=TenderSerializer(
+                Tender.objects.filter(owner__username=serializer.validated_data['username']).all()[
+                                     serializer.validated_data['offset']:serializer.validated_data['offset'] +
+                                                                         serializer.validated_data[
+                                                                             'limit']],
+                many=True
+            ).data
         )
