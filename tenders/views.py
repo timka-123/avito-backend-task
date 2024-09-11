@@ -5,8 +5,8 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from core.models import User, Organization
-from .models import Tender, TenderStatus
-from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer, TenderChangeStatusRequest
+from .models import Tender, TenderStatus, TenderHistory
+from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer, TenderChangeStatusRequest, EditTenderSerializer
 
 
 class TenderView(APIView):
@@ -183,6 +183,63 @@ class TenderStatusView(APIView):
         tender.status = serializer.validated_data['status']
         tender.save()
 
+        return Response(
+            status=200,
+            data=TenderSerializer(tender).data
+        )
+
+
+class EditTenderView(APIView):
+    def patch(self, request: Request, tender_id: str):
+        serializer = EditTenderSerializer(request.data)
+
+        if not serializer.is_valid():
+            return Response(
+                status=400,
+                data={
+                    "reason": "Bad request"
+                }
+            )
+
+        try:
+            tender = Tender.objects.get(tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
+
+        if request.data.get("serviceType") and request.data.get("serviceType") not in ['Construction', 'Delivery', 'Manufacture']:
+            return Response(
+                status=400,
+                data={
+                    "reason": "serviceType field incorrect value"
+                }
+            )
+
+        tender_history_item = TenderHistory(
+            tender_id=tender_id,
+            name=tender.name,
+            description=tender.description,
+            serviceType=tender.serviceType,
+            status=tender.status,
+            version=tender.version,
+            organizationId=tender.organizationId,
+            createdAt=tender.createdAt,
+            onwer=tender.owner
+        )
+
+        for key, value in request.data.items():
+            match key:
+                case "name": tender.name = value
+                case "description": tender.description = value
+                case "serviceType": tender.serviceType = value
+
+        tender.version += 1
+
+        tender.save()
         return Response(
             status=200,
             data=TenderSerializer(tender).data

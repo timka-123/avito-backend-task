@@ -32,3 +32,9 @@ class MyTenderFilterSerializer(Serializer):
 class TenderChangeStatusRequest(Serializer):
     status = CharField()
     username = CharField()
+
+
+class EditTenderSerializer(Serializer):
+    name = CharField(max_length=100, allow_null=True, allow_blank=True)
+    description = CharField(max_length=500, allow_null=True, allow_blank=True)
+    serviceType = CharField(allow_null=True, allow_blank=True)
