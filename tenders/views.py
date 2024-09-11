@@ -245,3 +245,75 @@ class EditTenderView(APIView):
             status=200,
             data=TenderSerializer(tender).data
         )
+
+
+class RollbackTender(APIView):
+    def put(self, request: Request, tender_id: str, version: int):
+        username = request.query_params.get("username")
+        user = User.objects.filter(username=username).first()
+        if not username or not user:
+            return Response(
+                status=401,
+                data={
+                    "reason": "You have not logged in to perform this action"
+                }
+            )
+
+        try:
+            tender = Tender.objects.get(tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
+
+        if tender.owner_id != user.id:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You don't have permission to perform this action"
+                }
+            )
+
+        try:
+            tender_history = TenderHistory.objects.filter(version=version).filter(tender_id=tender_id).first()
+        except Exception as e:
+            return Response(
+                status=400,
+                data={
+                    "reason": "This tender don't have this version"
+                }
+            )
+
+        thi = TenderHistory(
+            tender_id=tender_id,
+            name=tender.name,
+            description=tender.description,
+            serviceType=tender.serviceType,
+            status=tender.status,
+            version=tender.version,
+            organizationId=tender.organizationId,
+            createdAt=tender.createdAt,
+            onwer=tender.owner
+        )
+
+        tender.name = tender_history.name
+        tender.description = tender_history.description
+        tender.serviceType = tender_history.serviceType
+        tender.status = tender_history.status
+        tender.version = tender_history.version
+        tender.organizationId = tender_history.organizationId
+        tender.createdAt = tender_history.createdAt
+        tender.owner = tender_history.owner
+        tender.version += 1
+
+        tender.save()
+
+        return Response(
+            status=200,
+            data=TenderSerializer(tender).data
+        )
+
+
