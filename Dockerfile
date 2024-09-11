@@ -7,5 +7,5 @@ RUN pip3 install -r requirements.txt
 
 COPY . .
 
-CMD ["sh", "-c", "exec python3 manage.py migrate"]
+# CMD ["sh", "-c", "exec python3 manage.py migrate"]
 CMD ["sh", "-c", "exec python3 manage.py runserver $SERVER_ADDRESS"]
