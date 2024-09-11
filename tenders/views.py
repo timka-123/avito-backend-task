@@ -215,7 +215,7 @@ class EditTenderView(APIView):
             return Response(
                 status=400,
                 data={
-                    "reason": "serviceType field incorrect value"
+                    "reason": "serviceType field has incorrect value"
                 }
             )
 
@@ -230,6 +230,7 @@ class EditTenderView(APIView):
             createdAt=tender.createdAt,
             onwer=tender.owner
         )
+        tender_history_item.save()
 
         for key, value in request.data.items():
             match key:
