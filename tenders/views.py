@@ -124,5 +124,22 @@ class TenderStatusView(APIView):
         if request.query_params.get("username"):
             user = User.objects.filter(username=request.query_params.get("username")).first()
         else:
-            user = None
+            return Response(
+                status=401,
+                data={
+                    "reason": "You have not logged in"
+                }
+            )
 
+        if not user or user.id != tender.owner:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You have not permission to view this resource"
+                }
+            )
+
+        return Response(
+            status=200,
+            data=tender.status
+        )
