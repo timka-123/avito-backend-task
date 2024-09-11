@@ -7,5 +7,5 @@ urlpatterns = [
     path("", TenderView.as_view()),
     path("new", CreateTenderView.as_view()),
     path("my", GetMyTenders.as_view()),
-    path("<tender_id:int>/status", TenderStatusView.as_view())
+    path("<int:tender_id>/status", TenderStatusView.as_view())
 ]

@@ -27,3 +27,8 @@ class MyTenderFilterSerializer(Serializer):
     limit = IntegerField(default=5)
     offset = IntegerField(default=0)
     username = CharField()
+
+
+class TenderChangeStatusRequest(Serializer):
+    status = CharField()
+    username = CharField()

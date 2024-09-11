@@ -6,7 +6,7 @@ from rest_framework.views import APIView
 
 from core.models import User, Organization
 from .models import Tender, TenderStatus
-from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer
+from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer, TenderChangeStatusRequest
 
 
 class TenderView(APIView):
@@ -142,4 +142,48 @@ class TenderStatusView(APIView):
         return Response(
             status=200,
             data=tender.status
+        )
+
+    def patch(self, request: Request, tender_id: str):
+        serializer = TenderFilterSerializer(data=request.data)
+        if not serializer.is_valid() or serializer.validated_data['status'] not in ['Created', 'Published', 'Closed']:
+            return Response(
+                status=400,
+                data={
+                    "reason": "Bad request"
+                }
+            )
+
+        user = User.objects.filter(username=serializer.validated_data['username']).first()
+        if not user:
+            return Response(
+                status=401,
+                data={
+                    "reason": "You are not logged in to perform this action"
+                }
+            )
+
+        try:
+            tender = Tender.objects.get(tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
+        if tender.owner_id != user.id:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You have not permission for perform this action"
+                }
+            )
+
+        tender.status = serializer.validated_data['status']
+        tender.save()
+
+        return Response(
+            status=200,
+            data=TenderSerializer(tender).data
         )
