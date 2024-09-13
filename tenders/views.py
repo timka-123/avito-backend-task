@@ -4,7 +4,7 @@ from rest_framework.request import Request
 from rest_framework.response import Response
 from rest_framework.views import APIView
 
-from core.models import User, Organization
+from core.models import User, Organization, OrganizationResponsible
 from .models import Tender, TenderStatus, TenderHistory
 from .serializers import TenderFilterSerializer, CreateTenderSerializer, TenderSerializer, MyTenderFilterSerializer, TenderChangeStatusRequest, EditTenderSerializer
 
@@ -61,6 +61,15 @@ class CreateTenderView(APIView):
                 status=400,
                 data={
                     "reason": "Organization does not exists"
+                }
+            )
+
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id).first()
+        if not responsible:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You don't have permission to perform this action"
                 }
             )
 
@@ -123,6 +132,8 @@ class TenderStatusView(APIView):
             )
         if request.query_params.get("username"):
             user = User.objects.filter(username=request.query_params.get("username")).first()
+            organization = Organization.objects.get(tender.organizationId.id)
+            responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
         else:
             return Response(
                 status=401,
@@ -131,7 +142,7 @@ class TenderStatusView(APIView):
                 }
             )
 
-        if not user or user.id != tender.owner:
+        if not responsible:
             return Response(
                 status=403,
                 data={
@@ -153,8 +164,19 @@ class TenderStatusView(APIView):
                     "reason": "Bad request"
                 }
             )
+        try:
+            tender = Tender.objects.get(tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
 
         user = User.objects.filter(username=serializer.validated_data['username']).first()
+        organization = Organization.objects.get(tender.organizationId.id)
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
         if not user:
             return Response(
                 status=401,
@@ -172,7 +194,7 @@ class TenderStatusView(APIView):
                     "reason": "Tender is not found"
                 }
             )
-        if tender.owner_id != user.id:
+        if not responsible:
             return Response(
                 status=403,
                 data={
@@ -216,6 +238,25 @@ class EditTenderView(APIView):
                 status=400,
                 data={
                     "reason": "serviceType field has incorrect value"
+                }
+            )
+
+        user = User.objects.filter(username=serializer.validated_data['username']).first()
+        organization = Organization.objects.get(tender.organizationId.id)
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
+        if not user:
+            return Response(
+                status=401,
+                data={
+                    "reason": "You are not logged in to perform this action"
+                }
+            )
+
+        if not responsible:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You have not permission for perform this action"
                 }
             )
 
@@ -268,8 +309,10 @@ class RollbackTender(APIView):
                     "reason": "Tender is not found"
                 }
             )
+        organization = Organization.objects.get(tender.organizationId.id)
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
 
-        if tender.owner_id != user.id:
+        if not responsible:
             return Response(
                 status=403,
                 data={
