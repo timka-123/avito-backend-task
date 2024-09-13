@@ -27,7 +27,7 @@ SECRET_KEY = 'django-insecure-e8mey$@kzqpya+g*^md6&na*zz0(9s*j@#t-a8$6ypox_s%=ej
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = environ.get("DEBUG", False)
 
-ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com']
+ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com', 'localhost']
 
 # я не смог написать миграции, поэтому да здравствуют костыли
 conn = psycopg2.connect(environ.get("POSTGRES_CONN", "postgres://postgres:postgres@localhost:5432/avito"))
@@ -133,7 +133,7 @@ REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
     ),
-    "EXCEPTION_HANDLER": "avito-backend-task.core.other.custom_exception_handler"
+    "EXCEPTION_HANDLER": "core.other.custom_exception_handler"
 }
 
 MIDDLEWARE = [
