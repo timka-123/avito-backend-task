@@ -46,7 +46,7 @@ cur.execute("""create table if not exists tenders_tender
     "organizationId_id" uuid                     not null
         constraint "tenders_tender_organizationId_id_987d46b4_fk_organization_id"
             references organization
-            deferrable initially deferred,
+            deferrable initially deferred
 );""")
 print("created tenders")
 cur.execute("""create table if not exists tenders_tenderhistory
@@ -62,7 +62,7 @@ cur.execute("""create table if not exists tenders_tenderhistory
     "organizationId_id" uuid                     not null
         constraint "tenders_tenderhistor_organizationId_id_64ac1400_fk_organizat"
             references organization
-            deferrable initially deferred,
+            deferrable initially deferred
 );""")
 print("created tenders history")
 
@@ -91,8 +91,8 @@ cur.execute("""CREATE TABLE if not exists bid_reviews (
     feedback TEXT NOT NULL,
     bid_id UUID NOT NULL,
     user_id UUID NOT NULL,
-    FOREIGN KEY (bid_id) REFERENCES bid(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+    FOREIGN KEY (bid_id) REFERENCES bids_bid(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
 );""")
 cur.execute("""CREATE TABLE if not exists bid_history (
     bid_id UUID NOT NULL,
@@ -105,8 +105,8 @@ cur.execute("""CREATE TABLE if not exists bid_history (
     version INTEGER NOT NULL DEFAULT 1,
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     approved_count INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (tenderId) REFERENCES tender(id) ON DELETE CASCADE,
-    FOREIGN KEY (authorId) REFERENCES user(id) ON DELETE CASCADE
+    FOREIGN KEY (tenderId) REFERENCES tenders_tender(id) ON DELETE CASCADE,
+    FOREIGN KEY (authorId) REFERENCES "user"(id) ON DELETE CASCADE
 );""")
 print("created bids")
 conn.commit()
