@@ -202,7 +202,20 @@ class TenderStatusView(APIView):
                 }
             )
 
+        TenderHistory.objects.create(
+            tender_id=tender_id,
+            name=tender.name,
+            description=tender.description,
+            serviceType=tender.serviceType,
+            status=tender.status,
+            version=tender.version,
+            organizationId=tender.organizationId,
+            createdAt=tender.createdAt,
+            onwer=tender.owner
+        )
+
         tender.status = serializer.validated_data['status']
+        tender.version += 1
         tender.save()
 
         return Response(
@@ -260,7 +273,7 @@ class EditTenderView(APIView):
                 }
             )
 
-        tender_history_item = TenderHistory(
+        TenderHistory.objects.create(
             tender_id=tender_id,
             name=tender.name,
             description=tender.description,
@@ -271,7 +284,6 @@ class EditTenderView(APIView):
             createdAt=tender.createdAt,
             onwer=tender.owner
         )
-        tender_history_item.save()
 
         for key, value in request.data.items():
             match key:
@@ -330,7 +342,7 @@ class RollbackTender(APIView):
                 }
             )
 
-        thi = TenderHistory(
+        TenderHistory.objects.create(
             tender_id=tender_id,
             name=tender.name,
             description=tender.description,

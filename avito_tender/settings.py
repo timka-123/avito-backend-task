@@ -30,7 +30,7 @@ DEBUG = environ.get("DEBUG", False)
 ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com']
 
 # я не смог написать миграции, поэтому да здравствуют костыли
-conn = psycopg2.connect(environ.get("POSTGRES_CONN"))
+conn = psycopg2.connect(environ.get("POSTGRES_CONN", "postgres://postgres:postgres@localhost:5432/avito"))
 cur = conn.cursor()
 # tenders
 cur.execute("""create table if not exists tenders_tender
@@ -47,10 +47,6 @@ cur.execute("""create table if not exists tenders_tender
         constraint "tenders_tender_organizationId_id_987d46b4_fk_organization_id"
             references organization
             deferrable initially deferred,
-    owner_id            uuid                     not null
-        constraint tenders_tender_owner_id_c6d256d0_fk_employee_id
-            references employee
-            deferrable initially deferred
 );""")
 print("created tenders")
 cur.execute("""create table if not exists tenders_tenderhistory
@@ -67,10 +63,6 @@ cur.execute("""create table if not exists tenders_tenderhistory
         constraint "tenders_tenderhistor_organizationId_id_64ac1400_fk_organizat"
             references organization
             deferrable initially deferred,
-    owner_id            uuid                     not null
-        constraint tenders_tenderhistory_owner_id_bfc88973_fk_employee_id
-            references employee
-            deferrable initially deferred
 );""")
 print("created tenders history")
 
@@ -93,6 +85,28 @@ cur.execute("""create table if not exists bids_bid
         constraint "bids_bid_tenderId_id_5dc6e1e7_fk_tenders_tender_id"
             references tenders_tender
             deferrable initially deferred
+);""")
+cur.execute("""CREATE TABLE if not exists bid_reviews (
+    id UUID PRIMARY KEY,
+    feedback TEXT NOT NULL,
+    bid_id UUID NOT NULL,
+    user_id UUID NOT NULL,
+    FOREIGN KEY (bid_id) REFERENCES bid(id) ON DELETE CASCADE,
+    FOREIGN KEY (user_id) REFERENCES user(id) ON DELETE CASCADE
+);""")
+cur.execute("""CREATE TABLE if not exists bid_history (
+    bid_id UUID NOT NULL,
+    name VARCHAR(100) NOT NULL,
+    description TEXT NOT NULL,
+    status VARCHAR(255) NOT NULL DEFAULT 'CREATED',
+    tenderId UUID NOT NULL,
+    authorType VARCHAR(255) NOT NULL,
+    authorId UUID NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    approved_count INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (tenderId) REFERENCES tender(id) ON DELETE CASCADE,
+    FOREIGN KEY (authorId) REFERENCES user(id) ON DELETE CASCADE
 );""")
 print("created bids")
 conn.commit()
@@ -118,7 +132,8 @@ INSTALLED_APPS = [
 REST_FRAMEWORK = {
     'DEFAULT_RENDERER_CLASSES': (
         'rest_framework.renderers.JSONRenderer',
-    )
+    ),
+    "EXCEPTION_HANDLER": "avito-backend-task.core.other.custom_exception_handler"
 }
 
 MIDDLEWARE = [

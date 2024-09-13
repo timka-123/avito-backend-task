@@ -31,3 +31,4 @@ HELP.md
 
 # python
 .venv
+.env

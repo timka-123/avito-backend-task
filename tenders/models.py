@@ -27,7 +27,6 @@ class Tender(models.Model):
     version = models.IntegerField(default=1, null=False)
     organizationId = models.ForeignKey(Organization, on_delete=models.CASCADE)
     createdAt = models.DateTimeField(auto_now_add=True, null=False)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class TenderHistory(models.Model):
@@ -39,4 +38,3 @@ class TenderHistory(models.Model):
     version = models.IntegerField(default=1, null=False)
     organizationId = models.ForeignKey(Organization, on_delete=models.CASCADE)
     createdAt = models.DateTimeField(auto_now_add=True, null=False)
-    owner = models.ForeignKey(User, on_delete=models.CASCADE)
