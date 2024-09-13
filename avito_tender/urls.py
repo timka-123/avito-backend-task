@@ -21,5 +21,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/ping/', include("core.urls")),
     path('api/tenders/', include("tenders.urls")),
+    path('api/bids/', include("bids.urls"))
 ]
 

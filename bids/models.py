@@ -22,7 +22,7 @@ class Bid(models.Model):
     id = models.UUIDField(primary_key=True, max_length=100)
     name = models.CharField(max_length=100)
     description = models.TextField(max_length=500)
-    status = models.CharField(choices=BidStatus.choices)
+    status = models.CharField(choices=BidStatus.choices, default=BidStatus.CREATED)
     tenderId = models.ForeignKey(Tender, on_delete=models.CASCADE)
     authorType = models.CharField(choices=BidAuthorType.choices)
     authorId = models.ForeignKey(User, on_delete=models.CASCADE)
