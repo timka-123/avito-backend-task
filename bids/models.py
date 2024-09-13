@@ -11,6 +11,8 @@ class BidStatus(models.TextChoices):
     CREATED = "Created"
     PUBLISHED = "Published"
     CANCELED = "Canceled"
+    APPROVED = "Approved"
+    DECLINED = "Declined"
 
 
 class BidAuthorType(models.TextChoices):
