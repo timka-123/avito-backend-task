@@ -18,7 +18,7 @@ class Migration(migrations.Migration):
                 ('id', models.BigAutoField(auto_created=True, primary_key=True, serialize=False, verbose_name='ID')),
             ],
             options={
-                'db_table': 'organization_type',
+                'db_table': 'type',
             },
         ),
         migrations.CreateModel(
@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
                 ('description', models.TextField()),
                 ('created_at', models.DateTimeField(auto_now_add=True)),
                 ('updated_at', models.DateTimeField(auto_now_add=True)),
-                ('organization_type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.organizationtype')),
+                ('type', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.organizationtype')),
             ],
             options={
                 'db_table': 'organization',

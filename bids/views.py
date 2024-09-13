@@ -87,3 +87,8 @@ class ListTenderBids(APIView):
             status=200,
             data=BidSerilizer(bids, many=True).data
         )
+
+
+class TenderStatusView(APIView):
+    def get(self, request: Request):
+        ...

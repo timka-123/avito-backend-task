@@ -9,6 +9,8 @@ https://docs.djangoproject.com/en/5.0/topics/settings/
 For the full list of settings and their values, see
 https://docs.djangoproject.com/en/5.0/ref/settings/
 """
+import psycopg2
+
 from os import environ
 from pathlib import Path
 
@@ -26,6 +28,76 @@ SECRET_KEY = 'django-insecure-e8mey$@kzqpya+g*^md6&na*zz0(9s*j@#t-a8$6ypox_s%=ej
 DEBUG = environ.get("DEBUG", False)
 
 ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com']
+
+# я не смог написать миграции, поэтому да здравствуют костыли
+conn = psycopg2.connect(environ.get("POSTGRES_CONN"))
+cur = conn.cursor()
+# tenders
+cur.execute("""create table if not exists tenders_tender
+(
+    id                  uuid                     not null
+        primary key,
+    name                varchar(100)             not null,
+    description         text                     not null,
+    "serviceType"       varchar                  not null,
+    status              varchar                  not null,
+    version             integer                  not null,
+    "createdAt"         timestamp with time zone not null,
+    "organizationId_id" uuid                     not null
+        constraint "tenders_tender_organizationId_id_987d46b4_fk_organization_id"
+            references organization
+            deferrable initially deferred,
+    owner_id            uuid                     not null
+        constraint tenders_tender_owner_id_c6d256d0_fk_employee_id
+            references employee
+            deferrable initially deferred
+);""")
+print("created tenders")
+cur.execute("""create table if not exists tenders_tenderhistory
+(
+    tender_id           uuid                     not null
+        primary key,
+    name                varchar(100)             not null,
+    description         text                     not null,
+    "serviceType"       varchar                  not null,
+    status              varchar                  not null,
+    version             integer                  not null,
+    "createdAt"         timestamp with time zone not null,
+    "organizationId_id" uuid                     not null
+        constraint "tenders_tenderhistor_organizationId_id_64ac1400_fk_organizat"
+            references organization
+            deferrable initially deferred,
+    owner_id            uuid                     not null
+        constraint tenders_tenderhistory_owner_id_bfc88973_fk_employee_id
+            references employee
+            deferrable initially deferred
+);""")
+print("created tenders history")
+
+# bids
+cur.execute("""create table if not exists bids_bid
+(
+    id            uuid                     not null
+        primary key,
+    name          varchar(100)             not null,
+    description   text                     not null,
+    status        varchar                  not null,
+    "authorType"  varchar                  not null,
+    version       integer default 1        not null,
+    "createdAt"   timestamp with time zone not null,
+    "authorId_id" uuid                     not null
+        constraint "bids_bid_authorId_id_6e629b77_fk_employee_id"
+            references employee
+            deferrable initially deferred,
+    "tenderId_id" uuid                     not null
+        constraint "bids_bid_tenderId_id_5dc6e1e7_fk_tenders_tender_id"
+            references tenders_tender
+            deferrable initially deferred
+);""")
+print("created bids")
+conn.commit()
+cur.close()
+conn.close()
 
 
 # Application definition
