@@ -92,7 +92,7 @@ cur.execute("""CREATE TABLE if not exists bid_reviews (
     bid_id UUID NOT NULL,
     user_id UUID NOT NULL,
     FOREIGN KEY (bid_id) REFERENCES bids_bid(id) ON DELETE CASCADE,
-    FOREIGN KEY (user_id) REFERENCES "user"(id) ON DELETE CASCADE
+    FOREIGN KEY (user_id) REFERENCES "employee"(id) ON DELETE CASCADE
 );""")
 cur.execute("""CREATE TABLE if not exists bid_history (
     bid_id UUID NOT NULL,
@@ -106,7 +106,7 @@ cur.execute("""CREATE TABLE if not exists bid_history (
     createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
     approved_count INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (tenderId) REFERENCES tenders_tender(id) ON DELETE CASCADE,
-    FOREIGN KEY (authorId) REFERENCES "user"(id) ON DELETE CASCADE
+    FOREIGN KEY (authorId) REFERENCES "employee"(id) ON DELETE CASCADE
 );""")
 print("created bids")
 conn.commit()
