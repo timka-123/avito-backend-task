@@ -313,7 +313,7 @@ class SubmitFeedback(APIView):
             )
 
         if decision == "Rejected":
-            bid.status = BidStatus.CANCELED
+            bid.status = BidStatus.DECLINED
             bid.save()
         else:
             bid.approved_count += 1
@@ -321,7 +321,7 @@ class SubmitFeedback(APIView):
             if min(3, people_count) >= bid.approved_count:
                 tender.status = TenderStatus.CLOSED
                 tender.save()
-                bid.status = BidStatus.CANCELED
+                bid.status = BidStatus.APPROVED
             bid.save()
 
         return Response(
