@@ -43,7 +43,7 @@ class Migration(migrations.Migration):
             name='BidReview',
             fields=[
                 ('id', models.UUIDField(primary_key=True, serialize=False)),
-                ('feedback', models.TextField()),
+                ('description', models.TextField()),
                 ('bid_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='bids.bid')),
                 ('user_id', models.ForeignKey(on_delete=django.db.models.deletion.CASCADE, to='core.user')),
             ],

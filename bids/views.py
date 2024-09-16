@@ -7,7 +7,7 @@ from rest_framework.response import Response
 from .models import Bid, BidHistory, BidStatus, BidReview
 from core.models import User, Organization, OrganizationResponsible
 from tenders.models import Tender, TenderStatus
-from .serializer import CreateBidSerializer, BidSerilizer, MyBidsSerializer
+from .serializer import CreateBidSerializer, BidSerilizer, MyBidsSerializer, ListReviewSerializer, BidReviewSerializer
 from .permissions import UsernamePermission
 
 
@@ -338,16 +338,82 @@ class BidReviewView(APIView):
             return Response(
                 status=403,
                 data={
-                    "reason": "You don't have permission to send feedback to this resource"
+                    "reason": "You don't have permission to send description to this resource"
                 }
             )
 
         BidReview.objects.create(
             id=uuid4(),
-            feedback=feedback,
+            description=feedback,
             bid_id=bid.id,
             user_id=user.id
         )
         return Response(
             data=BidSerilizer(bid).data
+        )
+
+
+class ViewFeedbacks(APIView):
+    def get(self, request: Request, tender_id: str):
+        serializer = ListReviewSerializer(data=request.query_params)
+        if not serializer.is_valid():
+            return Response(
+                status=400,
+                data={
+                    "reason": "Bad request"
+                }
+            )
+
+        try:
+            tender = Tender.objects.get(id=tender_id)
+        except Tender.DoesNotExist:
+            return Response(
+                status=404,
+                data={
+                    "reason": "Tender is not found"
+                }
+            )
+
+        requester = User.objects.filter(username=serializer.validated_data['requesterUsername']).first()
+        author = User.objects.filter(username=serializer.validated_data['authorUsername']).first()
+        if not requester:
+            return Response(
+                status=401,
+                data={
+                    "reason": "You must to login"
+                }
+            )
+
+        if not author:
+            return Response(
+                status=400,
+                data={
+                    "reason": "Bad request"
+                }
+            )
+
+        bid = Bid.objects.filter(tenderId__id=tender_id).filter(authorId=author).first()
+        if not bid:
+            return Response(
+                status=400,
+                data={
+                    "reason": "This author has not applied to this tender"
+                }
+            )
+        organization = bid.tenderId.organizationId
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=requester.id)
+        if not responsible:
+            return Response(
+                status=403,
+                data={
+                    "reason": "You have not permission to view this resource"
+                }
+            )
+
+        reviews = BidReview.objects.filter(bid=bid).all()[
+                    serializer.validated_data['offset']:serializer.validated_data['offset'] + serializer.validated_data[
+                        'limit']]
+
+        return Response(
+            data=BidReviewSerializer(reviews, many=True).data
         )

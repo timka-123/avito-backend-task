@@ -1,6 +1,6 @@
 from rest_framework.serializers import Serializer, ModelSerializer, IntegerField, CharField
 
-from .models import Bid
+from .models import Bid, BidReview
 
 
 class CreateBidSerializer(ModelSerializer):
@@ -19,3 +19,16 @@ class MyBidsSerializer(Serializer):
     limit = IntegerField(default=5)
     offset = IntegerField(default=0)
     username = CharField()
+
+
+class BidReviewSerializer(ModelSerializer):
+    class Meta:
+        model = BidReview
+        fields = ['id', 'description', 'createdAt']
+
+
+class ListReviewSerializer(Serializer):
+    authorUsername = CharField()
+    requesterUsername = CharField()
+    limit = IntegerField(default=5)
+    offset = IntegerField(default=0)

@@ -129,12 +129,13 @@ cur.execute("""create table if not exists bids_bid
 );""")
 cur.execute("""CREATE TABLE if not exists bid_reviews (
     id UUID PRIMARY KEY,
-    feedback TEXT NOT NULL,
+    description TEXT NOT NULL,
     bid_id uuid not null constraint "bid_reviews_bid_id_id_6e629b77_fk_bods_bid_id" references bids_bid deferrable initially deferred,
     user_id uuid                     not null
         constraint "bid_reviews_user_id_id_6e629b77_fk_employee_id"
             references employee
             deferrable initially deferred,
+    "createdAt"   timestamp with time zone not null,
     FOREIGN KEY (bid_id) REFERENCES bids_bid(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES "employee"(id) ON DELETE CASCADE
 );""")

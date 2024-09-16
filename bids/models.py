@@ -35,9 +35,10 @@ class Bid(models.Model):
 
 class BidReview(models.Model):
     id = models.UUIDField(primary_key=True, max_length=100)
-    feedback = models.TextField()
+    description = models.TextField()
     bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
     user = models.ForeignKey(User, on_delete=models.CASCADE)
+    createdAt = models.DateTimeField(auto_now_add=True)
 
     class Meta:
         db_table = "bid_reviews"
