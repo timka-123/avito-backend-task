@@ -40,7 +40,7 @@ class TenderView(APIView):
 class CreateTenderView(APIView):
     def post(self, request: Request):
         serializer = CreateTenderSerializer(data=request.data)
-        if not serializer.is_valid():
+        if not serializer.is_valid() or serializer.validated_data['serviceType'] not in ['Construction', 'Delivery', 'Manufacture']:
             return Response(
                 status=400,
                 data={
@@ -78,8 +78,8 @@ class CreateTenderView(APIView):
             description=serializer.validated_data['description'],
             serviceType=serializer.validated_data['serviceType'],
             organizationId_id=serializer.validated_data['organizationId'],
-            owner_id=user.id,
-            id=uuid4()
+            id=uuid4(),
+            owner_id=user.id
         )
         return Response(
             status=200,
@@ -122,7 +122,7 @@ class GetMyTenders(APIView):
 class TenderStatusView(APIView):
     def get(self, request: Request, tender_id: str):
         try:
-            tender = Tender.objects.get(tender_id)
+            tender = Tender.objects.get(id=tender_id)
         except Tender.DoesNotExist:
             return Response(
                 status=404,
@@ -132,8 +132,15 @@ class TenderStatusView(APIView):
             )
         if request.query_params.get("username"):
             user = User.objects.filter(username=request.query_params.get("username")).first()
-            organization = Organization.objects.get(tender.organizationId.id)
-            responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
+            if not user:
+                return Response(
+                    status=401,
+                    data={
+                        "reason": "You have not logged in"
+                    }
+                )
+            organization = tender.organizationId
+            responsible = OrganizationResponsible.objects.filter(organization__id=str(organization.id)).filter(user__id=user.id)
         else:
             return Response(
                 status=401,
@@ -156,7 +163,7 @@ class TenderStatusView(APIView):
         )
 
     def patch(self, request: Request, tender_id: str):
-        serializer = TenderFilterSerializer(data=request.data)
+        serializer = TenderChangeStatusRequest(data=request.query_params)
         if not serializer.is_valid() or serializer.validated_data['status'] not in ['Created', 'Published', 'Closed']:
             return Response(
                 status=400,
@@ -165,7 +172,7 @@ class TenderStatusView(APIView):
                 }
             )
         try:
-            tender = Tender.objects.get(tender_id)
+            tender = Tender.objects.get(id=tender_id)
         except Tender.DoesNotExist:
             return Response(
                 status=404,
@@ -175,8 +182,6 @@ class TenderStatusView(APIView):
             )
 
         user = User.objects.filter(username=serializer.validated_data['username']).first()
-        organization = Organization.objects.get(tender.organizationId.id)
-        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
         if not user:
             return Response(
                 status=401,
@@ -184,14 +189,13 @@ class TenderStatusView(APIView):
                     "reason": "You are not logged in to perform this action"
                 }
             )
-
-        try:
-            tender = Tender.objects.get(tender_id)
-        except Tender.DoesNotExist:
+        organization = tender.organizationId
+        responsible = OrganizationResponsible.objects.filter(organization__id=str(organization.id)).filter(user__id=str(user.id))
+        if not user:
             return Response(
-                status=404,
+                status=401,
                 data={
-                    "reason": "Tender is not found"
+                    "reason": "You are not logged in to perform this action"
                 }
             )
         if not responsible:
@@ -202,20 +206,7 @@ class TenderStatusView(APIView):
                 }
             )
 
-        TenderHistory.objects.create(
-            tender_id=tender_id,
-            name=tender.name,
-            description=tender.description,
-            serviceType=tender.serviceType,
-            status=tender.status,
-            version=tender.version,
-            organizationId=tender.organizationId,
-            createdAt=tender.createdAt,
-            onwer=tender.owner
-        )
-
         tender.status = serializer.validated_data['status']
-        tender.version += 1
         tender.save()
 
         return Response(
@@ -226,18 +217,9 @@ class TenderStatusView(APIView):
 
 class EditTenderView(APIView):
     def patch(self, request: Request, tender_id: str):
-        serializer = EditTenderSerializer(request.data)
-
-        if not serializer.is_valid():
-            return Response(
-                status=400,
-                data={
-                    "reason": "Bad request"
-                }
-            )
-
+        username = request.query_params.get("username")
         try:
-            tender = Tender.objects.get(tender_id)
+            tender = Tender.objects.get(id=tender_id)
         except Tender.DoesNotExist:
             return Response(
                 status=404,
@@ -254,9 +236,7 @@ class EditTenderView(APIView):
                 }
             )
 
-        user = User.objects.filter(username=serializer.validated_data['username']).first()
-        organization = Organization.objects.get(tender.organizationId.id)
-        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
+        user = User.objects.filter(username=username).first()
         if not user:
             return Response(
                 status=401,
@@ -264,6 +244,8 @@ class EditTenderView(APIView):
                     "reason": "You are not logged in to perform this action"
                 }
             )
+        organization = tender.organizationId
+        responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
 
         if not responsible:
             return Response(
@@ -282,7 +264,8 @@ class EditTenderView(APIView):
             version=tender.version,
             organizationId=tender.organizationId,
             createdAt=tender.createdAt,
-            onwer=tender.owner
+            owner_id=tender.owner_id,
+            id=str(uuid4())
         )
 
         for key, value in request.data.items():
@@ -313,7 +296,7 @@ class RollbackTender(APIView):
             )
 
         try:
-            tender = Tender.objects.get(tender_id)
+            tender = Tender.objects.get(id=tender_id)
         except Tender.DoesNotExist:
             return Response(
                 status=404,
@@ -321,7 +304,7 @@ class RollbackTender(APIView):
                     "reason": "Tender is not found"
                 }
             )
-        organization = Organization.objects.get(tender.organizationId.id)
+        organization = tender.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
 
         if not responsible:
@@ -351,7 +334,8 @@ class RollbackTender(APIView):
             version=tender.version,
             organizationId=tender.organizationId,
             createdAt=tender.createdAt,
-            onwer=tender.owner
+            owner_id=tender.owner_id,
+            id=str(uuid4())
         )
 
         tender.name = tender_history.name

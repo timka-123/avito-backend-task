@@ -32,6 +32,37 @@ ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com', '
 # я не смог написать миграции, поэтому да здравствуют костыли
 conn = psycopg2.connect(environ.get("POSTGRES_CONN", "postgres://postgres:postgres@localhost:5432/avito"))
 cur = conn.cursor()
+# core database
+cur.execute("""CREATE TABLE IF NOT EXISTS employee (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    username VARCHAR(50) UNIQUE NOT NULL,
+    first_name VARCHAR(50),
+    last_name VARCHAR(50),
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);""")
+cur.execute("""DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'organization_type') THEN
+        CREATE TYPE organization_type AS ENUM ('IE', 'LLC', 'JSC');
+    END IF;
+END $$;
+
+CREATE TABLE IF NOT EXISTS organization (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name VARCHAR(100) NOT NULL,
+    description TEXT,
+    type organization_type,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS organization_responsible (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    organization_id UUID REFERENCES organization(id) ON DELETE CASCADE,
+    user_id UUID REFERENCES employee(id) ON DELETE CASCADE
+);""")
+
 # tenders
 cur.execute("""create table if not exists tenders_tender
 (
@@ -46,13 +77,18 @@ cur.execute("""create table if not exists tenders_tender
     "organizationId_id" uuid                     not null
         constraint "tenders_tender_organizationId_id_987d46b4_fk_organization_id"
             references organization
+            deferrable initially deferred,
+    owner_id            uuid                     not null
+        constraint tenders_tender_owner_id_c6d256d0_fk_employee_id
+            references employee
             deferrable initially deferred
 );""")
 print("created tenders")
 cur.execute("""create table if not exists tenders_tenderhistory
 (
-    tender_id           uuid                     not null
+    id                  uuid                     not null
         primary key,
+    tender_id           uuid                     not null,
     name                varchar(100)             not null,
     description         text                     not null,
     "serviceType"       varchar                  not null,
@@ -62,6 +98,10 @@ cur.execute("""create table if not exists tenders_tenderhistory
     "organizationId_id" uuid                     not null
         constraint "tenders_tenderhistor_organizationId_id_64ac1400_fk_organizat"
             references organization
+            deferrable initially deferred,
+    owner_id            uuid                     not null
+        constraint tenders_tender_owner_id_c6d256d0_fk_employee_id
+            references employee
             deferrable initially deferred
 );""")
 print("created tenders history")

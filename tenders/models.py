@@ -27,10 +27,12 @@ class Tender(models.Model):
     version = models.IntegerField(default=1, null=False)
     organizationId = models.ForeignKey(Organization, on_delete=models.CASCADE)
     createdAt = models.DateTimeField(auto_now_add=True, null=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
 
 
 class TenderHistory(models.Model):
-    tender_id = models.UUIDField(auto_created=True, primary_key=True)
+    id = models.UUIDField(primary_key=True)
+    tender_id = models.UUIDField(auto_created=True)
     name = models.CharField(max_length=100, null=False)
     description = models.TextField(max_length=500, null=False)
     serviceType = models.CharField(choices=ServiceTypes.choices, null=False)
@@ -38,3 +40,4 @@ class TenderHistory(models.Model):
     version = models.IntegerField(default=1, null=False)
     organizationId = models.ForeignKey(Organization, on_delete=models.CASCADE)
     createdAt = models.DateTimeField(auto_now_add=True, null=False)
+    owner = models.ForeignKey(User, on_delete=models.CASCADE)
