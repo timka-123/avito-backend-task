@@ -32,6 +32,8 @@ ALLOWED_HOSTS = ['cnrprod1725726830-team-78345-32801.avito2024.codenrock.com', '
 # я не смог написать миграции, поэтому да здравствуют костыли
 conn = psycopg2.connect(environ.get("POSTGRES_CONN", "postgres://postgres:postgres@localhost:5432/avito"))
 cur = conn.cursor()
+cur.execute('CREATE EXTENSION IF NOT EXISTS "uuid-ossp";')
+
 # core database
 cur.execute("""CREATE TABLE IF NOT EXISTS employee (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
