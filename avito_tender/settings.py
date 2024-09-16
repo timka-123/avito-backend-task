@@ -124,29 +124,38 @@ cur.execute("""create table if not exists bids_bid
     "tenderId_id" uuid                     not null
         constraint "bids_bid_tenderId_id_5dc6e1e7_fk_tenders_tender_id"
             references tenders_tender
-            deferrable initially deferred
+            deferrable initially deferred,
+    approved_count integer default 0        not null
 );""")
 cur.execute("""CREATE TABLE if not exists bid_reviews (
     id UUID PRIMARY KEY,
     feedback TEXT NOT NULL,
-    bid_id UUID NOT NULL,
-    user_id UUID NOT NULL,
+    bid_id uuid not null constraint "bid_reviews_bid_id_id_6e629b77_fk_bods_bid_id" references bids_bid deferrable initially deferred,
+    user_id uuid                     not null
+        constraint "bid_reviews_user_id_id_6e629b77_fk_employee_id"
+            references employee
+            deferrable initially deferred,
     FOREIGN KEY (bid_id) REFERENCES bids_bid(id) ON DELETE CASCADE,
     FOREIGN KEY (user_id) REFERENCES "employee"(id) ON DELETE CASCADE
 );""")
 cur.execute("""CREATE TABLE if not exists bid_history (
-    bid_id UUID NOT NULL,
-    name VARCHAR(100) NOT NULL,
-    description TEXT NOT NULL,
-    status VARCHAR(255) NOT NULL DEFAULT 'CREATED',
-    tenderId UUID NOT NULL,
-    authorType VARCHAR(255) NOT NULL,
-    authorId UUID NOT NULL,
-    version INTEGER NOT NULL DEFAULT 1,
-    createdAt TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    approved_count INTEGER NOT NULL DEFAULT 0,
-    FOREIGN KEY (tenderId) REFERENCES tenders_tender(id) ON DELETE CASCADE,
-    FOREIGN KEY (authorId) REFERENCES "employee"(id) ON DELETE CASCADE
+    id uuid not null primary key,
+    bid_id            uuid                     not null,
+    name          varchar(100)             not null,
+    description   text                     not null,
+    status        varchar                  not null,
+    "authorType"  varchar                  not null,
+    version       integer default 1        not null,
+    "createdAt"   timestamp with time zone not null,
+    "authorId_id" uuid                     not null
+        constraint "bids_bid_authorId_id_6e629b77_fk_employee_id"
+            references employee
+            deferrable initially deferred,
+    "tenderId_id" uuid                     not null
+        constraint "bids_bid_tenderId_id_5dc6e1e7_fk_tenders_tender_id"
+            references tenders_tender
+            deferrable initially deferred,
+    approved_count integer default 0        not null
 );""")
 print("created bids")
 conn.commit()

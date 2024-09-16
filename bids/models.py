@@ -36,14 +36,15 @@ class Bid(models.Model):
 class BidReview(models.Model):
     id = models.UUIDField(primary_key=True, max_length=100)
     feedback = models.TextField()
-    bid_id = models.ForeignKey(Bid, on_delete=models.CASCADE)
-    user_id = models.ForeignKey(User, on_delete=models.CASCADE)
+    bid = models.ForeignKey(Bid, on_delete=models.CASCADE)
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
 
     class Meta:
         db_table = "bid_reviews"
 
 
 class BidHistory(models.Model):
+    id = models.UUIDField(primary_key=True, max_length=100)
     bid_id = models.UUIDField(max_length=100)
     name = models.CharField(max_length=100)
     description = models.TextField(max_length=500)

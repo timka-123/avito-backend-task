@@ -34,7 +34,7 @@ class MyBids(APIView):
     permission_classes = [UsernamePermission]
 
     def get(self, request: Request):
-        serializer = MyBidsSerializer(request.query_params)
+        serializer = MyBidsSerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(
                 status=400,
@@ -54,7 +54,7 @@ class ListTenderBids(APIView):
     permission_classes = [UsernamePermission]
 
     def get(self, request: Request, tender_id: str):
-        serializer = MyBidsSerializer(request.query_params)
+        serializer = MyBidsSerializer(data=request.query_params)
         if not serializer.is_valid():
             return Response(
                 status=400,
@@ -63,7 +63,7 @@ class ListTenderBids(APIView):
                 }
             )
         try:
-            Tender.objects.get(tender_id)
+            Tender.objects.get(id=tender_id)
         except Tender.DoesNotExist:
             return Response(
                 status=404,
@@ -82,7 +82,7 @@ class BidStatusView(APIView):
 
     def get(self, request: Request, bid_id: str):
         try:
-            bid = Bid.objects.get(bid_id)
+            bid = Bid.objects.get(id=bid_id)
         except Bid.DoesNotExist:
             return Response(
                 status=404,
@@ -93,10 +93,10 @@ class BidStatusView(APIView):
 
         user = User.objects.filter(username=request.query_params.get("username")).first()
 
-        tender = Tender.objects.get(bid.tenderId.id)
-        organization = Organization.objects.get(tender.organizationId.id)
+        tender = bid.tenderId
+        organization = tender.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
-        if not responsible and user.id != bid.authorId:
+        if not responsible and user != bid.authorId:
             return Response(
                 status=403,
                 data={
@@ -110,7 +110,7 @@ class BidStatusView(APIView):
 
     def put(self, request: Request, bid_id: str):
         status = request.query_params.get("status")
-        if not status or status in ['Created', 'Published', 'Canceled']:
+        if not status or status not in ['Created', 'Published', 'Canceled']:
             return Response(
                 status=400,
                 data={
@@ -118,7 +118,7 @@ class BidStatusView(APIView):
                 }
             )
         try:
-            bid = Bid.objects.get(bid_id)
+            bid = Bid.objects.get(id=bid_id)
         except Bid.DoesNotExist:
             return Response(
                 status=404,
@@ -129,10 +129,9 @@ class BidStatusView(APIView):
 
         user = User.objects.filter(username=request.query_params.get("username")).first()
 
-        tender = Tender.objects.get(bid.tenderId.id)
-        organization = Organization.objects.get(tender.organizationId.id)
+        organization = bid.tenderId.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
-        if not responsible and user.id != bid.authorId:
+        if not responsible and user != bid.authorId:
             return Response(
                 status=403,
                 data={
@@ -140,20 +139,8 @@ class BidStatusView(APIView):
                 }
             )
 
-        BidHistory.objects.create(
-            bid_id=bid_id,
-            name=bid.name,
-            description=bid.description,
-            status=bid.status,
-            tenderId=bid.tenderId,
-            authorId=bid.authorId,
-            authorType=bid.authorType,
-            version=bid.version,
-            createdAt=bid.createdAt
-        )
 
         bid.status = status
-        bid.version += 1
         bid.save()
         return Response(
             data=BidSerilizer(bid).data
@@ -166,7 +153,7 @@ class EditBid(APIView):
     def patch(self, request: Request, bid_id: str):
         username = request.query_params.get("username")
         try:
-            bid = Bid.objects.get(bid_id)
+            bid = Bid.objects.get(id=bid_id)
         except Bid.DoesNotExist:
             return Response(
                 status=404,
@@ -177,10 +164,9 @@ class EditBid(APIView):
 
         user = User.objects.filter(username=username).first()
 
-        tender = Tender.objects.get(bid.tenderId.id)
-        organization = Organization.objects.get(tender.organizationId.id)
+        organization = bid.tenderId.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
-        if not responsible and user.id != bid.authorId:
+        if not responsible and user != bid.authorId:
             return Response(
                 status=403,
                 data={
@@ -197,7 +183,8 @@ class EditBid(APIView):
             authorId=bid.authorId,
             authorType=bid.authorType,
             version=bid.version,
-            createdAt=bid.createdAt
+            createdAt=bid.createdAt,
+            id=str(uuid4())
         )
 
         for key, value in request.data.items():
@@ -218,7 +205,7 @@ class RollbackBid(APIView):
     def put(self, request: Request, bid_id: str, version: int):
         username = request.query_params.get("username")
         try:
-            bid = Bid.objects.get(bid_id)
+            bid = Bid.objects.get(id=bid_id)
         except Bid.DoesNotExist:
             return Response(
                 status=404,
@@ -258,7 +245,8 @@ class RollbackBid(APIView):
             authorId=bid.authorId,
             authorType=bid.authorType,
             version=bid.version,
-            createdAt=bid.createdAt
+            createdAt=bid.createdAt,
+            id=str(uuid4())
         )
         bid.version += 1
         bid.name = bid_history.name
@@ -292,7 +280,7 @@ class SubmitFeedback(APIView):
                 }
             )
         try:
-            bid = Bid.objects.get(bid_id)
+            bid = Bid.objects.get(id=bid_id)
         except Bid.DoesNotExist:
             return Response(
                 status=404,
@@ -301,8 +289,7 @@ class SubmitFeedback(APIView):
                 }
             )
 
-        tender = Tender.objects.get(bid.tenderId.id)
-        organization = Organization.objects.get(tender.organizationId.id)
+        organization = bid.tenderId.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
         if not responsible:
             return Response(
@@ -319,8 +306,8 @@ class SubmitFeedback(APIView):
             bid.approved_count += 1
             people_count = OrganizationResponsible.objects.filter(organization__id=organization.id).count()
             if min(3, people_count) >= bid.approved_count:
-                tender.status = TenderStatus.CLOSED
-                tender.save()
+                bid.tenderId.status = TenderStatus.CLOSED
+                bid.tenderId.save()
                 bid.status = BidStatus.APPROVED
             bid.save()
 
@@ -336,9 +323,8 @@ class BidReviewView(APIView):
         feedback = request.query_params.get("bidFeedback")
         username = request.query_params.get("username")
         user = User.objects.filter(username=username).first()
-        bid = Bid.objects.get(bid_id)
-        tender = Tender.objects.get(bid.tenderId.id)
-        organization = Organization.objects.get(tender.organizationId.id)
+        bid = Bid.objects.get(id=bid_id)
+        organization = bid.tenderId.organizationId
         responsible = OrganizationResponsible.objects.filter(organization__id=organization.id).filter(user__id=user.id)
         if not feedback:
             return Response(
@@ -359,8 +345,8 @@ class BidReviewView(APIView):
         BidReview.objects.create(
             id=uuid4(),
             feedback=feedback,
-            bid_id=bid,
-            user_id=user
+            bid_id=bid.id,
+            user_id=user.id
         )
         return Response(
             data=BidSerilizer(bid).data
