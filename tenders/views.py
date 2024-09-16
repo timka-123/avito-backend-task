@@ -338,6 +338,7 @@ class RollbackTender(APIView):
             id=str(uuid4())
         )
 
+        tender.version += 1
         tender.name = tender_history.name
         tender.description = tender_history.description
         tender.serviceType = tender_history.serviceType
@@ -346,7 +347,6 @@ class RollbackTender(APIView):
         tender.organizationId = tender_history.organizationId
         tender.createdAt = tender_history.createdAt
         tender.owner = tender_history.owner
-        tender.version += 1
 
         tender.save()
 
